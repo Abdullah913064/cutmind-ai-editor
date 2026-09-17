@@ -1,0 +1,79 @@
+name: Render semantic algebra course v2
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'remotion_semantic_math_v2.zip'
+      - '.github/workflows/render-semantic-algebra.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  render-chapters:
+    strategy:
+      fail-fast: false
+      matrix:
+        chapter: [1,2,3,4,5,6,7,8,9,10]
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unpack renderer
+        run: unzip -q remotion_semantic_math_v2.zip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install system dependencies
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg espeak-ng libsndfile1 fonts-dejavu-core fonts-liberation
+      - name: Install renderer dependencies
+        working-directory: remotion_semantic_math
+        run: npm install
+      - name: Install narration dependencies
+        run: pip install 'kokoro>=0.9.4' soundfile numpy
+      - name: Generate exact-timed narration
+        working-directory: remotion_semantic_math
+        run: python scripts/generate_audio.py --chapter ${{ matrix.chapter }} --voice af_heart --speed 1.0
+      - name: Render chapter
+        working-directory: remotion_semantic_math
+        shell: bash
+        run: |
+          ID=$(printf 'Chapter%02d' '${{ matrix.chapter }}')
+          OUT=$(printf 'out/chapter-%02d.mp4' '${{ matrix.chapter }}')
+          mkdir -p out
+          npx remotion render src/index.ts "$ID" "$OUT" --codec=h264 --crf=20 --concurrency=2
+          ffprobe -v error -show_entries format=duration,size -of default=nw=1 "$OUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chapter-${{ matrix.chapter }}
+          path: remotion_semantic_math/out/chapter-*.mp4
+          retention-days: 7
+          compression-level: 0
+
+  assemble:
+    needs: render-chapters
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: chapter-*
+          path: chapters
+          merge-multiple: true
+      - name: Join chapters
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          find chapters -name 'chapter-*.mp4' | sort | awk '{print "file \047" $0 "\047"}' > concat.txt
+          ffmpeg -y -f concat -safe 0 -i concat.txt -c copy algebra-zero-to-confidence-1hour.mp4
+          ffprobe -v error -show_entries format=duration,size -of default=nw=1 algebra-zero-to-confidence-1hour.mp4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: algebra-zero-to-confidence-1hour
+          path: algebra-zero-to-confidence-1hour.mp4
+          retention-days: 7
+          compression-level: 0
