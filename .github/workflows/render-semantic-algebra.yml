@@ -1,4 +1,4 @@
-name: Render semantic algebra course v3
+name: Render semantic algebra course v4
 
 on:
   pull_request:
@@ -44,7 +44,7 @@ jobs:
           ID=$(printf 'Chapter%02d' '${{ matrix.chapter }}')
           OUT=$(printf 'out/chapter-%02d.mp4' '${{ matrix.chapter }}')
           mkdir -p out
-          npx remotion render src/index.ts "$ID" "$OUT" --codec=h264 --crf=20 --concurrency=2
+          npx remotion render src/index.tsx "$ID" "$OUT" --codec=h264 --crf=20 --concurrency=2
           ffprobe -v error -show_entries format=duration,size -of default=nw=1 "$OUT"
       - uses: actions/upload-artifact@v4
         with:
