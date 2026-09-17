@@ -4,6 +4,10 @@ on:
     paths:
       - 'math-video/**'
       - '.github/workflows/render-math-course.yml'
+  pull_request:
+    paths:
+      - 'math-video/**'
+      - '.github/workflows/render-math-course.yml'
   workflow_dispatch:
 
 permissions:
