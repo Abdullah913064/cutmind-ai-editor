@@ -1,4 +1,4 @@
-name: Render semantic algebra course v4
+name: Render semantic algebra course v5
 
 on:
   pull_request:
@@ -8,6 +8,10 @@ on:
       - '.github/workflows/render-semantic-algebra.yml'
   workflow_dispatch:
 
+concurrency:
+  group: semantic-algebra-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -15,6 +19,7 @@ jobs:
   render-chapters:
     strategy:
       fail-fast: false
+      max-parallel: 2
       matrix:
         chapter: [1,2,3,4,5,6,7,8,9,10]
     runs-on: ubuntu-latest
