@@ -1,0 +1,25 @@
+{
+  "name": "semantic-math-course",
+  "private": true,
+  "scripts": {
+    "manifest": "python scripts/build_manifest.py",
+    "audio": "python scripts/generate_audio.py",
+    "audio:ch1": "python scripts/generate_audio.py --chapter 1",
+    "start": "remotion studio src/index.tsx",
+    "render:chapter1": "remotion render src/index.tsx Chapter01 out/chapter-01.mp4 --codec=h264 --crf=18",
+    "render:video": "remotion render src/index.tsx AlgebraCourse out/algebra-course.mp4 --codec=h264 --crf=18",
+    "render": "npm run audio && npm run render:video"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.506",
+    "@remotion/media": "^4.0.506",
+    "remotion": "^4.0.506",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.10",
+    "@types/react-dom": "^19.1.7",
+    "typescript": "^5.9.2"
+  }
+}
