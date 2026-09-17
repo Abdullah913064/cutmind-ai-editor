@@ -1,0 +1,1 @@
+Narration WAV files are generated here by scripts/generate_audio.py. Each semantic narration chunk is synthesized separately and its measured duration is written back into src/generatedManifest.ts before rendering.
