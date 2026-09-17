@@ -1,10 +1,10 @@
-name: Render semantic algebra course v2
+name: Render semantic algebra course v3
 
 on:
   pull_request:
     branches: [main]
     paths:
-      - 'remotion_semantic_math_v2.zip'
+      - 'remotion-course/**'
       - '.github/workflows/render-semantic-algebra.yml'
   workflow_dispatch:
 
@@ -21,8 +21,6 @@ jobs:
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
-      - name: Unpack renderer
-        run: unzip -q remotion_semantic_math_v2.zip
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -32,15 +30,15 @@ jobs:
       - name: Install system dependencies
         run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg espeak-ng libsndfile1 fonts-dejavu-core fonts-liberation
       - name: Install renderer dependencies
-        working-directory: remotion_semantic_math
-        run: npm install
+        working-directory: remotion-course
+        run: npm install --no-audit --no-fund
       - name: Install narration dependencies
         run: pip install 'kokoro>=0.9.4' soundfile numpy
       - name: Generate exact-timed narration
-        working-directory: remotion_semantic_math
+        working-directory: remotion-course
         run: python scripts/generate_audio.py --chapter ${{ matrix.chapter }} --voice af_heart --speed 1.0
       - name: Render chapter
-        working-directory: remotion_semantic_math
+        working-directory: remotion-course
         shell: bash
         run: |
           ID=$(printf 'Chapter%02d' '${{ matrix.chapter }}')
@@ -51,7 +49,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: chapter-${{ matrix.chapter }}
-          path: remotion_semantic_math/out/chapter-*.mp4
+          path: remotion-course/out/chapter-*.mp4
           retention-days: 7
           compression-level: 0
 
