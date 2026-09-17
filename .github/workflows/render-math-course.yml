@@ -1,0 +1,71 @@
+name: Render Semantic Maths Course
+on:
+  push:
+    paths:
+      - 'math-video/**'
+      - '.github/workflows/render-math-course.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONUNBUFFERED: '1'
+
+jobs:
+  render:
+    strategy:
+      fail-fast: false
+      matrix:
+        chapter: [1,2,3,4,5,6,7,8,9,10]
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: System packages
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg espeak-ng fonts-dejavu-core fonts-liberation
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install renderer
+        run: |
+          python -m pip install --upgrade pip
+          pip install 'kokoro>=0.9.4' soundfile numpy opencv-python-headless pillow
+      - name: Render chapter ${{ matrix.chapter }}
+        run: |
+          python math-video/pipeline.py --chapter ${{ matrix.chapter }} --outdir output
+      - name: Upload chapter
+        uses: actions/upload-artifact@v4
+        with:
+          name: chapter-${{ matrix.chapter }}
+          path: output/chapter_*.mp4
+          retention-days: 7
+          compression-level: 0
+
+  assemble:
+    needs: render
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: chapter-*
+          path: chapters
+          merge-multiple: true
+      - name: Assemble final one-hour course
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          find chapters -name 'chapter_*.mp4' | sort | awk '{print "file \047" $0 "\047"}' > concat.txt
+          ffmpeg -y -f concat -safe 0 -i concat.txt -c copy algebra-zero-to-confidence-1hour.mp4
+          ffprobe -v error -show_entries format=duration,size -of default=nw=1 algebra-zero-to-confidence-1hour.mp4
+      - name: Upload final video
+        uses: actions/upload-artifact@v4
+        with:
+          name: algebra-zero-to-confidence-1hour
+          path: algebra-zero-to-confidence-1hour.mp4
+          retention-days: 7
+          compression-level: 0
